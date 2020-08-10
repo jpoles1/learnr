@@ -1,8 +1,8 @@
 use mongodb::bson::{doc, oid::ObjectId, Bson::Document, to_bson};
-
+use restson::RestPath;
 mod db;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LearnrEntry {
     pub _id: ObjectId,
     pub learned: Vec<String>,
@@ -48,4 +48,8 @@ impl LearnrEntry {
             Err(e) =>  Err(format!("Error deleting entry: {}", e))
         }
     }
+}
+
+impl RestPath<()> for LearnrEntry {
+    fn get_path(_: ()) -> Result<String,restson::Error> { Ok(String::from("post")) }
 }
