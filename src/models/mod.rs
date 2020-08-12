@@ -35,7 +35,7 @@ impl LearnrEntry {
 #[async_trait]
 impl MongoSchema<LearnrEntry> for LearnrEntry {
     async fn insert(&self) -> Result<(), String> {
-        let collection = db::connect("entries".to_owned()).await;
+        let collection = db::connect("entries".to_owned()).await?;
         if let Document(doc) = to_bson(&self).unwrap() {
             let res = collection.insert_one(doc, None).await;
             return match res {
@@ -46,7 +46,7 @@ impl MongoSchema<LearnrEntry> for LearnrEntry {
         return Err("Could not convert struct to doc".to_owned());
     }
     async fn update(&self) -> Result<(), String> {
-        let collection = db::connect("entries".to_owned()).await;
+        let collection = db::connect("entries".to_owned()).await?;
         if let Document(doc) = to_bson(&self).unwrap() {
             let query = doc!{"_id": self._id.clone()};
             let res = collection.find_one_and_update(query, doc, None).await;
@@ -58,7 +58,7 @@ impl MongoSchema<LearnrEntry> for LearnrEntry {
         return Err("Could not convert struct to doc".to_owned());
     }
     async fn delete(&self) -> Result<(), String> {
-        let collection = db::connect("entries".to_owned()).await;
+        let collection = db::connect("entries".to_owned()).await?;
         let query = doc!{"_id": self._id.clone()};
         let res = collection.delete_one(query, None).await;
         return match res {
