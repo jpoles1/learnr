@@ -1,9 +1,23 @@
 use mongodb::bson::{doc, oid::ObjectId, Bson::Document, to_bson};
 use restson::RestPath;
+use async_trait::async_trait;
+
 mod db;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[async_trait]
+pub trait MongoSchema<T> {
+    async fn insert(&self) -> Result<(), String>;
+    async fn update(&self) -> Result<(), String>;
+    async fn delete(&self) -> Result<(), String>;
+}
+
+fn new_oid() -> ObjectId {
+    return ObjectId::new()
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LearnrEntry {
+    #[serde(default = "new_oid")]
     pub _id: ObjectId,
     pub learned: Vec<String>,
     pub questions: Vec<String>
@@ -16,7 +30,11 @@ impl LearnrEntry {
             learned, questions
         }
     }
-    pub async fn insert(&self) -> Result<(), String> {
+}
+
+#[async_trait]
+impl MongoSchema<LearnrEntry> for LearnrEntry {
+    async fn insert(&self) -> Result<(), String> {
         let collection = db::connect("entries".to_owned()).await;
         if let Document(doc) = to_bson(&self).unwrap() {
             let res = collection.insert_one(doc, None).await;
@@ -27,7 +45,7 @@ impl LearnrEntry {
         }
         return Err("Could not convert struct to doc".to_owned());
     }
-    pub async fn update(&self) -> Result<(), String> {
+    async fn update(&self) -> Result<(), String> {
         let collection = db::connect("entries".to_owned()).await;
         if let Document(doc) = to_bson(&self).unwrap() {
             let query = doc!{"_id": self._id.clone()};
@@ -39,7 +57,7 @@ impl LearnrEntry {
         }
         return Err("Could not convert struct to doc".to_owned());
     }
-    pub async fn delete(&self) -> Result<(), String> {
+    async fn delete(&self) -> Result<(), String> {
         let collection = db::connect("entries".to_owned()).await;
         let query = doc!{"_id": self._id.clone()};
         let res = collection.delete_one(query, None).await;
@@ -51,5 +69,5 @@ impl LearnrEntry {
 }
 
 impl RestPath<()> for LearnrEntry {
-    fn get_path(_: ()) -> Result<String,restson::Error> { Ok(String::from("post")) }
+    fn get_path(_: ()) -> Result<String,restson::Error> { Ok(String::from("entry")) }
 }
